@@ -365,7 +365,18 @@
             <p>Current weather data - powered by OpenWeather API</p>
         </header>
 
+        <form class="search" id="searchForm">
+            <input type="text" id="searchInput" placeholder="Enter city name…" autocomplete="off">
+            <button type="submit">Search</button>
+        </form>
 
+        <div class="chips" id="chips">
+            <button class="chip" data-city="Hanoi">Hanoi</button>
+            <button class="chip" data-city="Ho Chi Minh City">Ho Chi Minh City</button>
+            <button class="chip" data-city="Da Nang">Da Nang</button>
+            <button class="chip" data-city="Hue">Hue</button>
+            <button class="chip" data-city="Can Tho">Can Tho</button>
+        </div>
 
         <div class="card" id="card">
 
@@ -566,7 +577,19 @@
             showState(els.data);
         }
 
-        fetchWeather('Ho Chi Minh City');
+        document.getElementById('chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('.chip');
+            if (!btn) return;
+            fetchWeather(btn.dataset.city);
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = document.getElementById('searchInput').value.trim();
+            if (val) fetchWeather(val);
+        });
+
+        fetchWeather('Hanoi');
     </script>
 
 </body>
