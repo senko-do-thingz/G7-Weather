@@ -1,14 +1,12 @@
 package com.g7.weather;
 
-import java.util.Scanner;
-
 import com.g7.weather.exception.WeatherApiException;
 import com.g7.weather.model.WeatherData;
 import com.g7.weather.service.WeatherService;
 
 /**
  * Main entry point for the G7 Weather Service application. Version 2: Supports
- * searching for any city via interactive input.
+ * searching for any city via CLI arguments.
  */
 public class Main {
 
@@ -19,25 +17,19 @@ public class Main {
         // Resolve API key: CLI argument > environment variable > default
         String apiKey = resolveApiKey(args);
 
+        // Resolve city: Hardcoded for Version 1
+        String city = "Ho Chi Minh City";
+
         System.out.println("╔══════════════════════════════════════════╗");
-        System.out.println("║        G7 Weather Service v2.0.0         ║");
+        System.out.println("║        G7 Weather Service v1.0.0         ║");
         System.out.println("║        Powered by OpenWeather API        ║");
         System.out.println("╚══════════════════════════════════════════╝");
         System.out.println();
 
-        // Interactive city input
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter city name (default: Ho Chi Minh City): ");
-        String city = scanner.nextLine().trim();
-
-        if (city.isEmpty()) {
-            city = "Ho Chi Minh City";
-        }
-
         WeatherService service = new WeatherService(apiKey);
 
         try {
-            System.out.printf("%nFetching weather for: %s...%n%n", city);
+            System.out.printf("Fetching weather for: %s...%n%n", city);
             WeatherData data = service.getCurrentWeather(city);
             System.out.println(data);
         } catch (WeatherApiException e) {
