@@ -18,7 +18,7 @@ public class Main {
         String apiKey = resolveApiKey(args);
 
         // Resolve city: Hardcoded for Version 1
-        String city = "Ho Chi Minh City";
+        String city = "Ho Chi Minh City"; // test
 
         System.out.println("╔══════════════════════════════════════════╗");
         System.out.println("║        G7 Weather Service v1.0.0         ║");
