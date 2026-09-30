@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>G7 Weather</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <style>
+        :root {
+            --bg: #f4f6fb;
+            --panel: #ffffff;
+            --panel-2: #eef1f8;
+            --line: rgba(20, 30, 55, .10);
+            --amber: #dc8a2c;
+            --cyan: #1a8fc2;
+            --text: #141b2e;
+            --muted: #6b768e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 32px 16px 64px;
+        }
+
+        .sky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #f2b85c, #f28c5c, #5cc8f2, #3c6ef2);
+            transition: background 1.2s ease;
+            z-index: 5;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 460px;
+            position: relative;
+        }
+
+        header {
+            text-align: left;
+            margin-bottom: 22px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .brand .g7 {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: var(--amber);
+            font-size: 14px;
+            letter-spacing: .04em;
+            border: 1px solid rgba(242, 184, 92, .4);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 13.5px;
+        }
+
+        form.search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        form.search input {
+            flex: 1;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            color: var(--text);
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 14.5px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        form.search input:focus {
+            border-color: var(--cyan);
+        }
+
+        form.search button {
+            background: var(--amber);
+            color: #1a1204;
+            border: none;
+            padding: 0 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        form.search button:hover {
+            filter: brightness(1.08);
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .chip {
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 12.5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .chip:hover {
+            border-color: var(--cyan);
+            color: var(--text);
+        }
+
+        .card {
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 26px 24px;
+            position: relative;
+            overflow: hidden;
+            min-height: 220px;
+            box-shadow: 0 12px 28px -18px rgba(20, 30, 55, .28);
+        }
+
+        .card::after {
+            content: "";
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(92, 200, 242, .14), transparent 70%);
+        }
+
+        .state {
+            display: none;
+        }
+
+        .state.active {
+            display: block;
+        }
+
+        .loading {
+            color: var(--muted);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .loading::after {
+            content: "…";
+        }
+
+        .error {
+            color: #c23b3b;
+            font-size: 13.5px;
+            line-height: 1.5;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .place {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .place .country {
+            color: var(--muted);
+            font-weight: 400;
+            font-size: 12.5px;
+        }
+
+        .updated {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            text-align: right;
+        }
+
+        .main-readout {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin: 18px 0 6px;
+        }
+
+        .temp {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -.02em;
+        }
+
+        .temp sup {
+            font-size: 26px;
+            font-weight: 500;
+            color: var(--amber);
+        }
+
+        .cond {
+            font-size: 14.5px;
+            color: var(--muted);
+            text-transform: capitalize;
+            margin-top: 4px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .stat {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, .02);
+        }
+
+        .stat .label {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .stat .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .stat .value span {
+            color: var(--cyan);
+            font-size: 12px;
+        }
+
+        .map-panel {
+            margin-top: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            display: none;
+        }
+
+        .map-panel.active {
+            display: block;
+        }
+
+        .map-panel .map-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 400;
+            background: rgba(255, 255, 255, .85);
+            border: 1px solid var(--line);
+            backdrop-filter: blur(4px);
+            color: var(--text);
+            font-size: 11.5px;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 5px 10px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        #map {
+            height: 300px;
+            width: 100%;
+            background: var(--panel-2);
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(255, 255, 255, .82) !important;
+            color: var(--muted) !important;
+            font-size: 9.5px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: var(--cyan) !important;
+        }
+
+        .pin {
+            width: 16px;
+            height: 16px;
+            border-radius: 50% 50% 50% 0;
+            background: var(--amber);
+            border: 2px solid #ffffff;
+            transform: rotate(-45deg);
+            box-shadow: 0 0 0 4px rgba(220, 138, 44, .25);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 11.5px;
+            margin-top: 20px;
+        }
+
+        @media (prefers-reduced-motion:no-preference) {
+            .card {
+                transition: transform .2s ease;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sky" id="sky"></div>
+
+    <div class="app">
+        <header>
+            <div class="brand">
+                <span class="g7">G7</span>
+                <h1>Weather</h1>
+            </div>
+            <p>Current weather data - powered by OpenWeather API</p>
+        </header>
+
+        <form class="search" id="searchForm">
+            <input type="text" id="searchInput" placeholder="Enter city name…" autocomplete="off">
+            <button type="submit">Search</button>
+        </form>
+
+        <div class="chips" id="chips">
+            <button class="chip" data-city="Hanoi">Hanoi</button>
+            <button class="chip" data-city="Ho Chi Minh City">Ho Chi Minh City</button>
+            <button class="chip" data-city="Da Nang">Da Nang</button>
+            <button class="chip" data-city="Hue">Hue</button>
+            <button class="chip" data-city="Can Tho">Can Tho</button>
+        </div>
+
+        <div class="card" id="card">
+
+            <div class="state active" id="stateLoading">
+                <div class="loading">Fetching weather data</div>
+            </div>
+
+            <div class="state" id="stateError">
+                <div class="error" id="errorText"></div>
+            </div>
+
+            <div class="state" id="stateData">
+                <div class="top-row">
+                    <div class="place">
+                        <div id="cityName">-</div>
+                        <div class="country" id="cityMeta"></div>
+                    </div>
+                    <div class="updated" id="updated"></div>
+                </div>
+
+                <div class="main-readout">
+                    <div id="iconBox"></div>
+                    <div>
+                        <div class="temp"><span id="temp">--</span><sup>°C</sup></div>
+                        <div class="cond" id="cond">-</div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <div class="label">Feels like</div>
+                        <div class="value" id="feelsLike">-- <span>°C</span></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Humidity</div>
+                        <div class="value" id="humidity">-- <span>%</span></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Pressure</div>
+                        <div class="value" id="pressure">-- <span>hPa</span></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Wind</div>
+                        <div class="value" id="wind">-- <span>m/s</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="map-panel" id="mapPanel">
+            <div class="map-label" id="mapLabel">-</div>
+            <div id="map"></div>
+        </div>
+
+        <footer>G7-Weather · web interface using the same endpoint as WeatherService.java</footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // Same default key hardcoded in Main.java of the project.
+        // Recommended: replace with your own OpenWeather API key when deploying to production.
+        const API_KEY = "375ab58f17283ff241b4bf2098bc6f7b";
+        const BASE_URL = "https://api.openweathermap.org/data/2.5/weather";
+
+        const els = {
+            loading: document.getElementById('stateLoading'),
+            error: document.getElementById('stateError'),
+            errorText: document.getElementById('errorText'),
+            data: document.getElementById('stateData'),
+            cityName: document.getElementById('cityName'),
+            cityMeta: document.getElementById('cityMeta'),
+            updated: document.getElementById('updated'),
+            temp: document.getElementById('temp'),
+            cond: document.getElementById('cond'),
+            feelsLike: document.getElementById('feelsLike'),
+            humidity: document.getElementById('humidity'),
+            pressure: document.getElementById('pressure'),
+            wind: document.getElementById('wind'),
+            iconBox: document.getElementById('iconBox'),
+            sky: document.getElementById('sky'),
+            mapPanel: document.getElementById('mapPanel'),
+            mapLabel: document.getElementById('mapLabel'),
+        };
+
+        let map, marker;
+        function initMap(lat, lon) {
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: true,
+                dragging: true,
+                scrollWheelZoom: false,
+            }).setView([lat, lon], 12);
+
+            // OpenStreetMap DE - detailed map, clear streets, free, no API key required
+            L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18,
+            }).addTo(map);
+
+            const icon = L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [16, 16], iconAnchor: [8, 14] });
+            marker = L.marker([lat, lon], { icon }).addTo(map);
+            setTimeout(() => map.invalidateSize(), 100);
+        }
+
+        function updateMap(lat, lon, label) {
+            els.mapPanel.classList.add('active');
+            if (!map) {
+                initMap(lat, lon);
+            } else {
+                map.setView([lat, lon], 12);
+                marker.setLatLng([lat, lon]);
+                setTimeout(() => map.invalidateSize(), 50);
+            }
+            els.mapLabel.textContent = label;
+        }
+
+        const states = [els.loading, els.error, els.data];
+        function showState(el) {
+            states.forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Sky-strip color palette by weather group + day/night
+        const SKY = {
+            clear_d: 'linear-gradient(90deg,#f2b85c,#f2d75c)',
+            clear_n: 'linear-gradient(90deg,#1c2a52,#3c4e8c)',
+            clouds: 'linear-gradient(90deg,#8c99b3,#5c6c8c)',
+            rain: 'linear-gradient(90deg,#3c6ef2,#5cc8f2)',
+            thunder: 'linear-gradient(90deg,#3c2f6e,#8c5cf2)',
+            snow: 'linear-gradient(90deg,#cfe6f7,#eaf6ff)',
+            mist: 'linear-gradient(90deg,#6c7a94,#9fb0c9)',
+        };
+
+        function iconSvg(id, isDay) {
+            const stroke = 'currentColor';
+            const wrap = (inner) => `<svg width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--amber)">${inner}</svg>`;
+            if (id >= 200 && id < 300) return wrap(`<path d="M17 30h20a9 9 0 000-18 12 12 0 00-22.6 3.4A8 8 0 0017 30z" stroke="${stroke}" stroke-width="2"/><path d="M22 34l-4 8M30 34l-4 8M26 40l-3 6" stroke="#5cc8f2" stroke-width="2" stroke-linecap="round"/>`);
+            if (id >= 300 && id < 600) return wrap(`<path d="M17 26h20a9 9 0 000-18 12 12 0 00-22.6 3.4A8 8 0 0017 26z" stroke="${stroke}" stroke-width="2"/><path d="M20 32v8M27 32v8M34 32v8" stroke="#5cc8f2" stroke-width="2" stroke-linecap="round"/>`);
+            if (id >= 600 && id < 700) return wrap(`<path d="M17 26h20a9 9 0 000-18 12 12 0 00-22.6 3.4A8 8 0 0017 26z" stroke="${stroke}" stroke-width="2"/><circle cx="20" cy="34" r="1.6" fill="#1a8fc2"/><circle cx="27" cy="38" r="1.6" fill="#1a8fc2"/><circle cx="34" cy="34" r="1.6" fill="#1a8fc2"/><circle cx="27" cy="30" r="1.6" fill="#1a8fc2"/>`);
+            if (id >= 700 && id < 800) return wrap(`<path d="M10 20h34M10 27h34M10 34h34" stroke="${stroke}" stroke-width="2" stroke-linecap="round" opacity=".6"/>`);
+            if (id === 800) return isDay
+                ? wrap(`<circle cx="27" cy="27" r="10" stroke="${stroke}" stroke-width="2"/><g stroke="${stroke}" stroke-width="2" stroke-linecap="round"><path d="M27 6v6M27 42v6M6 27h6M42 27h6M12 12l4 4M38 38l4 4M42 12l-4 4M12 38l4 4"/></g>`)
+                : wrap(`<path d="M35 8a15 15 0 1011 25 12 12 0 01-11-25z" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>`);
+            return wrap(`<path d="M15 30a8 8 0 010-16 10 10 0 0119-3 8 8 0 01-2 15.8" stroke="${stroke}" stroke-width="2"/><path d="M17 30h20" stroke="${stroke}" stroke-width="2"/>`);
+        }
+
+        function skyKey(id, isDay) {
+            if (id >= 200 && id < 300) return 'thunder';
+            if (id >= 300 && id < 600) return 'rain';
+            if (id >= 600 && id < 700) return 'snow';
+            if (id >= 700 && id < 800) return 'mist';
+            if (id === 800) return isDay ? 'clear_d' : 'clear_n';
+            return 'clouds';
+        }
+
+        function formatTime(unix, tzOffsetSec) {
+            const d = new Date((unix + tzOffsetSec) * 1000);
+            return d.toUTCString().slice(17, 22);
+        }
+
+        async function fetchWeather(city) {
+            showState(els.loading);
+            const url = `${BASE_URL}?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=en`;
+            try {
+                const res = await fetch(url);
+                const body = await res.json();
+                if (!res.ok) {
+                    throw new Error(body && body.message ? body.message : `HTTP ${res.status}`);
+                }
+                render(body);
+            } catch (err) {
+                showState(els.error);
+                els.errorText.textContent = `Failed to fetch data: ${err.message}`;
+            }
+        }
+
+        function render(data) {
+            const isDay = data.weather[0].icon.endsWith('d');
+            const id = data.weather[0].id;
+
+            els.cityName.textContent = data.name;
+            els.cityMeta.textContent = data.sys && data.sys.country ? data.sys.country : '';
+            els.updated.textContent = `Updated ${formatTime(data.dt, data.timezone || 0)}`;
+            els.temp.textContent = Math.round(data.main.temp);
+            els.cond.textContent = data.weather[0].description;
+            els.feelsLike.innerHTML = `${Math.round(data.main.feels_like)} <span>°C</span>`;
+            els.humidity.innerHTML = `${data.main.humidity} <span>%</span>`;
+            els.pressure.innerHTML = `${data.main.pressure} <span>hPa</span>`;
+            els.wind.innerHTML = `${data.wind ? data.wind.speed : '--'} <span>m/s</span>`;
+            els.iconBox.innerHTML = iconSvg(id, isDay);
+            els.sky.style.background = SKY[skyKey(id, isDay)];
+
+            if (data.coord) {
+                updateMap(data.coord.lat, data.coord.lon, `${data.coord.lat.toFixed(2)}, ${data.coord.lon.toFixed(2)}`);
+            }
+
+            showState(els.data);
+        }
+
+        document.getElementById('chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('.chip');
+            if (!btn) return;
+            fetchWeather(btn.dataset.city);
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = document.getElementById('searchInput').value.trim();
+            if (val) fetchWeather(val);
+        });
+
+        fetchWeather('Hanoi');
+    </script>
+
+</body>
+
+</html>
