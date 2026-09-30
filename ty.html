@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You – G7 Weather Service</title>
+    <!-- Use the same font as slides.html -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* Exact same design tokens from slides.html */
+        :root {
+            --bg-primary: #060a14;
+            --bg-secondary: #0d1321;
+            --bg-card: rgba(17, 25, 44, 0.75);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --gradient-main: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Background Glows (consistent with slides) */
+        .bg-glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.12;
+            pointer-events: none;
+            animation: pulse-glow 8s ease-in-out infinite alternate;
+        }
+
+        .glow-blue {
+            background: #3b82f6;
+            width: 600px;
+            height: 600px;
+            top: -200px;
+            right: -150px;
+        }
+
+        .glow-purple {
+            background: #8b5cf6;
+            width: 500px;
+            height: 500px;
+            bottom: -200px;
+            left: -150px;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1); opacity: 0.12; }
+            100% { transform: scale(1.1); opacity: 0.18; }
+        }
+
+        /* Slide Content Container */
+        .slide-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .title-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 50px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 28px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .slide-title {
+            font-size: 80px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            letter-spacing: -2px;
+        }
+
+        .slide-subtitle {
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 700px;
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        /* Card Style (consistent with slides) */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px 40px;
+            backdrop-filter: blur(20px);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.35s, box-shadow 0.35s;
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            cursor: default;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient-main);
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(59, 130, 246, 0.25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+        }
+
+        /* Floating weather icon */
+        .weather-float {
+            position: absolute;
+            font-size: 120px;
+            opacity: 0.85;
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .weather-float.pos-1 {
+            top: 80px;
+            right: 120px;
+            animation-delay: 0s;
+        }
+
+        .weather-float.pos-2 {
+            bottom: 120px;
+            left: 100px;
+            animation-delay: 2s;
+            font-size: 80px;
+        }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background glows consistent with slides.html -->
+    <div class="bg-glow glow-blue"></div>
+    <div class="bg-glow glow-purple"></div>
+
+    <!-- Weather clouds -->
+    <div class="weather-float pos-1">🌦️</div>
+    <div class="weather-float pos-2">☁️</div>
+
+    <div class="slide-content">
+        <div class="title-badge">
+            <span>🎉 End of Presentation</span>
+        </div>
+        
+        <h1 class="slide-title">Thank You For Listening</h1>
+        <p class="slide-subtitle">We hope you enjoyed our presentation on the G7 Weather Service's CI/CD pipeline and automated testing process.</p>
+    </div>
+</body>
+</html>
